@@ -316,7 +316,6 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
                     if (status == TextToSpeech.SUCCESS) {
                         lector.setLanguage(new Locale("es", "ES"));
                         lector.setSpeechRate(1.0f);
-                        lector.speak(label, TextToSpeech.QUEUE_ADD, null);
                         if (!nuevoLabel.equals(label)) {
                             label = nuevoLabel;
                             lector.speak(label, TextToSpeech.QUEUE_ADD, null);
