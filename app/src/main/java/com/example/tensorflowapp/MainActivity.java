@@ -20,6 +20,7 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
+import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.View;
@@ -65,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         permisos_requeridos.add(Manifest.permission.CAMERA);
         permisos_requeridos.add(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
         permisos_requeridos.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-
+        cargarLabels(getApplicationContext());
         txtResults = findViewById(R.id.txtresults);
         btnCamara = findViewById(R.id.btCamera);
         permisosNoAprobados  = getPermisosNoAprobados(permisos_requeridos);
@@ -237,6 +238,7 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         } catch (final Exception e) {    }
 
     }
+
     protected void fillBytes(final Image.Plane[] planes, final byte[][] yuvBytes) {
         for (int i = 0; i < planes.length; ++i) {
             final ByteBuffer buffer = planes[i].getBuffer();
@@ -247,9 +249,7 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
         }
     }
     TextToSpeech lector;
-    private Handler handler = new Handler();
     private String label = "", nuevoLabel = "";
-
     private void processImage() {
         imageConverter.run();
 
@@ -292,14 +292,8 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
                 }
             }
 
-            cargarLabels(getApplicationContext());
-
             String str = "";
-            if(maxPro>75) {
-                label = clases.get(maxPos);
-            }else {
-                label="No se reconoce la imagen";
-            }
+            label = clases.get(maxPos);
             final String nuevoLabel;
             nuevoLabel = clases.get(maxPos);
 
@@ -316,34 +310,29 @@ public class MainActivity extends AppCompatActivity implements OnSuccessListener
                 }
             });
 
-            Runnable speakRunnable = new Runnable() {
+            lector = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
                 @Override
-                public void run() {
-                    lector = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-                        @Override
-                        public void onInit(int status) {
-                            if (status == TextToSpeech.SUCCESS) {
-                                lector.setLanguage(new Locale("es", "ES"));
-                                lector.setSpeechRate(1.0f);
-
-                                if (!nuevoLabel.equals(label)) {
-                                    label = nuevoLabel;
-                                    lector.speak(label, TextToSpeech.QUEUE_ADD, null);
-                                }
-                            }
+                public void onInit(int status) {
+                    if (status == TextToSpeech.SUCCESS) {
+                        lector.setLanguage(new Locale("es", "ES"));
+                        lector.setSpeechRate(1.0f);
+                        lector.speak(label, TextToSpeech.QUEUE_ADD, null);
+                        if (!nuevoLabel.equals(label)) {
+                            label = nuevoLabel;
+                            lector.speak(label, TextToSpeech.QUEUE_ADD, null);
                         }
-                    });
-                    handler.postDelayed(this, 5000);
+                    }
                 }
-            };
-            handler.post(speakRunnable);
+            });
+
             model.close();
         } catch (Exception e) {
-            txtResults.setText("No se reconoce la imagen");
+            txtResults.setText("Error al procesar la imagen");
         }
 
         postInferenceCallback.run();
     }
+
 
     private void cargarLabels(Context context) {
         try {
